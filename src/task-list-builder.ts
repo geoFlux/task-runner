@@ -30,6 +30,50 @@ export class TaskListBuilder {
         return this;
 
     }
+    private maxInFlightTasks: number = 0;//zero for no limit
+    
+    private inFlightRefCounter = (() => {
+        const inFlight = new BehaviorSubject(0);
+        const waitToProceed = async () => {                
+            if(this.maxInFlightTasks <= 0) return;
+            await inFlight
+                .filter(numTasksInFlight => numTasksInFlight < this.maxInFlightTasks)
+                .take(1)
+                .toPromise();
+        };
+
+        return {
+            increment: async () => {
+                do{
+                    if(this.maxInFlightTasks <= 0) {
+                        inFlight.next(inFlight.value + 1)
+                        return
+                    }
+                    else{
+                        await waitToProceed();
+                        const currInFlightTasks = inFlight.value;
+                        if(currInFlightTasks < this.maxInFlightTasks){
+                            inFlight.next(currInFlightTasks + 1)
+                            break;
+                        }
+                    }
+                }while(true)                
+                
+            },
+            decrement: () => inFlight.next(Math.max(0,inFlight.value - 1)),
+            
+            getInFlight: () => inFlight.asObservable()
+        }
+    })()
+    
+    /**
+     * limit the number of tasks that run in parallel
+     * @param maxInflightTasks the maximum number of tasks that will be in a running state at any one time
+     */
+    public limitInFlightTasks(maxInflightTasks: number) {
+        this.maxInFlightTasks = maxInflightTasks;
+        return this;
+    }
     private addTasks(sectionName: string, obj: any, sequence: number ){
         Object.keys(obj).forEach(key => {
             if(typeof obj[key] == 'function')
@@ -80,7 +124,7 @@ export class TaskListBuilder {
             init: () => {
             },
             run: async (cancelToken: CancelToken) => {
-
+                await this.inFlightRefCounter.increment();
                 info$.next({
                     ...info$.value,
                     startDate: cancelToken.isCanceled() ? '': moment().format('HH:mm:ss'),
@@ -109,7 +153,7 @@ export class TaskListBuilder {
                         await Promise.race([
                             cancelToken.waitForCancelation(),
                             runMethod({status: updateStatusText, warn})
-                        ])
+                        ])                        
                     }
 
 
@@ -144,7 +188,9 @@ export class TaskListBuilder {
                         status: 'errored',
                     })
                 }
-
+                finally{
+                    this.inFlightRefCounter.decrement();
+                }
 
             }
         };
