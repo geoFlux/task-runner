@@ -36,29 +36,34 @@ export class TaskListBuilder {
         return this;
 
     }    
-    private crackDescription<T>(description: TaskListDescription<T>): {topLevelFuncs: {name: string, func: TaskFunc}[], topLevelTrees: {name: string, tree: TaskListDescription<T>}[] } {
+    crackDescription<T>(
+        description: TaskListDescription<T>
+    ): {
+        topLevelFuncs: { name: string; func: TaskFunc }[];
+        topLevelTrees: { name: string; tree: TaskListDescription<T> }[];
+    } {
         const desc = description as any;
         const topLevelFuncs = Object.keys(desc)
-            .filter(key => typeof desc[key] == 'function')
+            .filter(key => typeof desc[key] == "function")
             .map(key => ({
                 name: key,
                 func: desc[key]
-            }))
-
-        let topLevelTrees:any[] = []
-        for(const propKey in description) {
-            if(typeof description[propKey] != 'function'){
-                topLevelTrees.push(({
+            }));
+    
+        let topLevelTrees: any[] = [];
+        for (const propKey in description) {
+            if (typeof description[propKey] != "function") {
+                topLevelTrees.push({
                     name: propKey,
                     tree: description[propKey]
-                }))                
+                });
             }
         }
-
+    
         return {
             topLevelFuncs,
             topLevelTrees
-        }               
+        };
     }
     private addTasksFromNameValue(section: string, obj: {name: string, func: TaskFunc}[]){
         let tmp = {} as any;
