@@ -1,12 +1,14 @@
 import { Task, TaskInfo, CancelationToken } from "./sync-models";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import  moment from 'moment';
-import { Warning } from "./warning";
-type Func1 = () => Promise<any>
-type Func2 = (status: (statusTxt: string) => void) => Promise<any>
-type Func3 = (status: (statusTxt: string) => void, warn: (warning: Warning) => void) => Promise<any>
+import { Warning, GenericWarning } from "./warning";
 
-type TaskFunc = Func1 | Func2 | Func3;
+interface TaskFuncArgs {
+    status: (statusTxt: string) => void,
+    warn: (warning: Warning | string) => void
+}
+type TaskFunc = (args: TaskFuncArgs) => Promise<any>
+
 type TaskTree =  TaskFunc   | TaskObject | TaskArray;
 
 interface TaskObject {
@@ -58,7 +60,9 @@ export class TaskListBuilder {
                 statusText
             })
         }
-        const warn = (warning: Warning) => {
+        const warn = (warning: Warning | string) => {
+            if(typeof warning == 'string')
+                warning = new GenericWarning(warning)
             info$.next({
                 ...info$.value,
                 warnings: [
@@ -99,11 +103,11 @@ export class TaskListBuilder {
                                     taskTime
                                 })
                             });
-                        let runMethod2 = runMethod as any;
+                        
                         //await task completion or cancelation
                         await Promise.race([
                             cancelToken.waitForCancelation(),
-                            runMethod2(updateStatusText, warn)
+                            runMethod({status: updateStatusText, warn})
                         ])
                     }
 

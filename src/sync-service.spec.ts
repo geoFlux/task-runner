@@ -1,6 +1,7 @@
 import { SyncService } from './sync-service'
 import { TaskListBuilder } from './task-list-builder'
 import assert from 'assert'
+import { GenericWarning } from './warning'
 describe('sync-service', () => {
     it('should run a single task', async () =>{
         const tb = new TaskListBuilder();
@@ -95,6 +96,75 @@ describe('sync-service', () => {
         assert.equal(downloadLevel1.some(x => x=='download3'), true, 'Download 3 task did not run in order')
 
         assert.equal(runStack[9], 'download4', 'Download 4 task did not run in order')
+    })
+    it('should be able to get status text from individual tasks', async () => {
+        const sync = new SyncService();
+        const runStack: string[] = []
+
+        const syncInfo = sync.beginSync({
+            upload: {
+                'upload desc 1': async ({status}) => {
+                    await delayRun(() => runStack.push('upload'))
+                    status('uploadStatus')
+                }
+            },
+            cleanup: {
+                'clean task 1': () => delayRun(() => runStack.push('clean'))
+            },
+            download: {
+                'download task 2': () => delayRun(() => runStack.push('download'))
+            },                 
+        })
+        let statusText: string | null = null
+
+        syncInfo.tasks$
+            .takeUntil(syncInfo.finished$)
+            .map(x => x.find(y => y.sectionName == 'upload'))
+            .subscribe(x => {
+                statusText = x == null ? null: x.statusText
+            })
+                    
+        await syncInfo.finished$.take(1).toPromise();
+        
+        assert.equal(statusText, 'uploadStatus');
+
+        assert.equal(runStack.some(x => x == 'upload'), true, 'Upload task did not run')
+        assert.equal(runStack.some(x => x == 'clean'), true, 'Clean task did not run')
+        assert.equal(runStack.some(x => x == 'download'), true, 'Download task did not run')
+    })
+    it('should accumilate all warnings', async () => {
+        const sync = new SyncService();
+        const runStack: string[] = []
+
+        const syncInfo = sync.beginSync({
+            upload: {
+                'upload desc 1': async ({warn}) => {
+                    await delayRun(() => runStack.push('upload'))
+                    warn(new GenericWarning('bad stuff is happening'))
+                }
+            },
+            cleanup: {
+                'clean task 1': async ({warn}) => {
+                    warn('more bad stuff is happening')
+                    await delayRun(() => runStack.push('clean'))
+                }
+            },
+            download: {                
+                'download task 2': async ({warn}) => {
+                    warn('download warning')
+                    await delayRun(() => runStack.push('download'))
+                    warn('another warning')
+                }
+            },                 
+        })                
+                    
+        const result = await syncInfo.finished$.take(1).toPromise();
+        
+        assert.equal(result.warnings.length, 4, 'expected 4 warnings to be returned')
+
+        assert.equal(runStack.some(x => x == 'upload'), true, 'Upload task did not run')
+        assert.equal(runStack.some(x => x == 'clean'), true, 'Clean task did not run')
+        assert.equal(runStack.some(x => x == 'download'), true, 'Download task did not run')
     })
 })
 
