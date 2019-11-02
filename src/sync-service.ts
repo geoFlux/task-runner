@@ -12,7 +12,7 @@ import { Warning } from './warning';
   and Angular DI.
 */
 
-export class SyncProvider{
+export class SyncService{
     constructor(
     ){
     }
@@ -43,6 +43,7 @@ export class SyncProvider{
         }
     }
 
+    
     private async sync(tasks: Task[], cancelToken: CancelationToken){
         this.progress.next(0);
 

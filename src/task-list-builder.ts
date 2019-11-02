@@ -3,41 +3,6 @@ import { BehaviorSubject, Observable, Subject } from "rxjs";
 import  moment from 'moment';
 import { Warning } from "./warning";
 
-type TaskDescription<T> = {
-    [P in keyof T]: TaskTree
-};
-
-function test<T>(desc: TaskDescription<T>){
-
-}
-test<{upload:unknown, clean: unknown}>({
-        upload: {
-        'First task': () => Promise.resolve(),
-        'then': {
-            'do something else': () => Promise.resolve()
-        }
-        },
-        clean: {
-            'furst clean': () => Promise.resolve(),
-        }
-    }
-)
-
-
-
-interface Todo {
-    task:{
-        name: string
-    }
-}
-
-const todo: Readonly<Todo> = {
-    task: {
-        name: 'my todo'
-    }
-};
-
-todo.task.name = 'test';
 
 type myFunc = ( () => Promise<any> ) | ( (status: (statusTxt: string) => void) => Promise<any> ) | ( (status: (statusTxt: string) => void, warn: (warning: Warning) => void) => Promise<any> );
 type TaskTree = ( myFunc )  | TaskObject | TaskArray;
