@@ -1,4 +1,5 @@
-import { Task, CancelationToken } from "./sync-models";
+import { Task } from "./sync-models";
+import { CancelToken } from "./cancel-token";
 
 const groupBy = (arr: any, trFunc: any) => arr.reduce((acc: any,item: any) => {
     acc[trFunc(item)] = acc[trFunc(item)] || [];
@@ -15,7 +16,7 @@ const groupBy = (arr: any, trFunc: any) => arr.reduce((acc: any,item: any) => {
  * sequence in parallel
  */
 export class TaskListRunner{
-    public runTasks(tasks: Task[], cancelToken: CancelationToken): Promise<void>{        
+    public runTasks(tasks: Task[], cancelToken: CancelToken): Promise<void>{        
 
         const tasksGrp = groupBy(tasks, (t: Task) => t.sectionName);
         const promise = Object.keys(tasksGrp)
@@ -32,7 +33,7 @@ export class TaskListRunner{
      *
      * run each task with the same sequence in parallel. starting with the lowest sequence
      */
-    private async runTasksBySequence(tasks: Task[], cancelToken: CancelationToken){
+    private async runTasksBySequence(tasks: Task[], cancelToken: CancelToken){
         tasks = tasks || [];
         const tasksSubGrp = groupBy(tasks, (t:Task) => t.sequence);
 

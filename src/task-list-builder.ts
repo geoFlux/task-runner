@@ -1,4 +1,5 @@
-import { Task, TaskInfo, CancelationToken } from "./sync-models";
+import { Task, TaskInfo } from "./sync-models";
+import { CancelToken } from "./cancel-token";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import  moment from 'moment';
 import { Warning, GenericWarning } from "./warning";
@@ -78,7 +79,7 @@ export class TaskListBuilder {
             info: info$.asObservable(),
             init: () => {
             },
-            run: async (cancelToken: CancelationToken) => {
+            run: async (cancelToken: CancelToken) => {
 
                 info$.next({
                     ...info$.value,

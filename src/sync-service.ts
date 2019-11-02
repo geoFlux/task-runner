@@ -1,6 +1,7 @@
 import { Subject, Observable, BehaviorSubject, ReplaySubject } from 'rxjs';
 import  moment from 'moment';
-import { TaskInfo, SyncInfo, cancelationToken, CancelationToken, SyncResult, Task } from './sync-models';
+import { TaskInfo, SyncInfo, SyncResult, Task } from './sync-models';
+import { CancelToken, getCancelToken } from "./cancel-token";
 import { TaskListRunner } from './task-list-runner';
 import flatMap from 'lodash.flatmap'
 import { Warning } from './warning';
@@ -33,7 +34,7 @@ export class SyncService{
         else{
             taskArray = tasks;
         }
-        const cancelToken = cancelationToken();
+        const cancelToken = getCancelToken();
         
 
         setTimeout(async () => {
@@ -55,7 +56,7 @@ export class SyncService{
     }
 
     
-    private async sync(tasks: Task[], cancelToken: CancelationToken){
+    private async sync(tasks: Task[], cancelToken: CancelToken){
         this.progress.next(0);
 
 

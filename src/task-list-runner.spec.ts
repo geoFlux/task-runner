@@ -1,7 +1,7 @@
 import { TaskListRunner } from './task-list-runner'
 import { TaskListBuilder } from './task-list-builder'
-import { cancelationToken } from './sync-models';
 import assert from  'assert';
+import { getCancelToken } from './cancel-token';
 
 describe('TaskListRunner', () => {
     it('should run tasks with arbitrary section names', async  () => {
@@ -13,7 +13,7 @@ describe('TaskListRunner', () => {
                 'upload 1': () => delayRun(() => uploadRan = true)
             }
         }).buildTasks()
-        const cancelToken = cancelationToken();
+        const cancelToken = getCancelToken();
         await runner.runTasks(tasks, cancelToken)
         assert.equal(uploadRan, true, 'arbitrary section did not run')
     })
@@ -33,7 +33,7 @@ describe('TaskListRunner', () => {
                 'download1': () => delayRun(() => runStack.push('download1'))
             }
         }).buildTasks()
-        const cancelToken = cancelationToken();
+        const cancelToken = getCancelToken();
         await runner.runTasks(tasks, cancelToken)
         assert.equal(runStack[0],'upload')
         assert.equal(runStack[1],'clean1')
@@ -44,7 +44,7 @@ describe('TaskListRunner', () => {
         const bld = new TaskListBuilder();
         
         const runStack: string[] = []        
-        const cancelToken = cancelationToken();
+        const cancelToken = getCancelToken();
         const tasks = bld.fromDescription({
             upload: {
                 'upload 1': () => delayRun(() => runStack.push('upload'))
