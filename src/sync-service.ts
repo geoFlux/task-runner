@@ -1,10 +1,11 @@
 import { Subject, Observable, BehaviorSubject, ReplaySubject } from 'rxjs';
 import  moment from 'moment';
 import { TaskInfo, SyncInfo, cancelationToken, CancelationToken, SyncResult, Task } from './sync-models';
-import { TaskListFactory } from './task-list-factory';
 import { TaskListRunner } from './task-list-runner';
 import flatMap from 'lodash.flatmap'
 import { Warning } from './warning';
+import { TaskListDescription, TaskListBuilder, taskListFromDescription } from './task-list-builder';
+
 /*
   Generated class for the SyncProvider provider.
 
@@ -21,12 +22,22 @@ export class SyncService{
     private progress = new Subject<number>();
     private isSyncing = new BehaviorSubject(false);
     private finished$: Subject<SyncResult> = new ReplaySubject<SyncResult>(1);;
-    public beginSync(tasks: Task[]): SyncInfo{
+    public beginSync(tasks: Task[] | TaskListDescription): SyncInfo{
+        let taskArray: Task[]
+        function isTaskListDescription(obj: Task[] | TaskListDescription): obj is TaskListDescription{
+            return !Array.isArray(obj);
+        }
+        if(isTaskListDescription(tasks)){
+            taskArray = taskListFromDescription(tasks);
+        }
+        else{
+            taskArray = tasks;
+        }
         const cancelToken = cancelationToken();
-        // this.finished$ = new ReplaySubject<SyncResult>(1);
+        
 
         setTimeout(async () => {
-            await this.sync(tasks, cancelToken)
+            await this.sync(taskArray, cancelToken)
         },10);
 
         this.isSyncing.next(true);
