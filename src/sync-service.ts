@@ -4,7 +4,7 @@ import { TaskInfo, SyncInfo, cancelationToken, CancelationToken, SyncResult, Tas
 import { TaskListRunner } from './task-list-runner';
 import flatMap from 'lodash.flatmap'
 import { Warning } from './warning';
-import { TaskListDescription, TaskListBuilder, taskListFromDescription } from './task-list-builder';
+import { taskListFromDescription, TaskListDescription } from './task-list-builder';
 
 /*
   Generated class for the SyncProvider provider.
@@ -22,9 +22,9 @@ export class SyncService{
     private progress = new Subject<number>();
     private isSyncing = new BehaviorSubject(false);
     private finished$: Subject<SyncResult> = new ReplaySubject<SyncResult>(1);;
-    public beginSync(tasks: Task[] | TaskListDescription): SyncInfo{
+    public beginSync<T>(tasks: Task[] | TaskListDescription<T>): SyncInfo{
         let taskArray: Task[]
-        function isTaskListDescription(obj: Task[] | TaskListDescription): obj is TaskListDescription{
+        function isTaskListDescription(obj: Task[] | TaskListDescription<T>): obj is TaskListDescription<T>{
             return !Array.isArray(obj);
         }
         if(isTaskListDescription(tasks)){
@@ -39,7 +39,7 @@ export class SyncService{
         setTimeout(async () => {
             await this.sync(taskArray, cancelToken)
         },10);
-
+        
         this.isSyncing.next(true);
         const startTime = moment();
 

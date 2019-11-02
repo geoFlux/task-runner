@@ -15,18 +15,18 @@ const groupBy = (arr: any, trFunc: any) => arr.reduce((acc: any,item: any) => {
  * sequence in parallel
  */
 export class TaskListRunner{
-    public runTasks(tasks: Task[], cancelToken: CancelationToken): Promise<void>{
-        const tasksGrp:{
-            upload: Task[],
-            download: Task[],
-            clean: Task[]
-        } = groupBy(tasks, (t: Task) => t.type);
+    public runTasks(tasks: Task[], cancelToken: CancelationToken): Promise<void>{        
 
-        //run upload tasks
-        return this.runTasksBySequence(tasksGrp.upload, cancelToken)
-            .then(() => this.runTasksBySequence(tasksGrp.clean, cancelToken))
-            .then(() => this.runTasksBySequence(tasksGrp.download, cancelToken));
+        const tasksGrp = groupBy(tasks, (t: Task) => t.sectionName);
+        const promise = Object.keys(tasksGrp)
+            .map(key => <Task[]>tasksGrp[key])
+            .reduce((acc,cur) => {
+                acc = acc.then(() => this.runTasksBySequence(cur, cancelToken))
+                return acc;
+            }, Promise.resolve<any>({}))
+        return promise;
     }
+    
 
     /**
      *

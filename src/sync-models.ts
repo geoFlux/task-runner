@@ -3,7 +3,7 @@ import { Warning } from "./warning";
 //these should probably all be interfaces
 export type Task = {
     name: string;
-    type: 'upload' | 'clean' | 'download',
+    sectionName: string,
     sequence: number,
     info: Observable<TaskInfo>,
     run: (cancelToken: CancelationToken) => Promise<void>
@@ -11,7 +11,7 @@ export type Task = {
 
 export type TaskInfo = {
     name: string,
-    type: 'upload' | 'clean' | 'download',
+    sectionName: string,
     enterDate: string,
     startDate: string,
     finishDate: string,

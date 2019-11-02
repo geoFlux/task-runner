@@ -2,10 +2,12 @@ import { Task, TaskInfo, CancelationToken } from "./sync-models";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import  moment from 'moment';
 import { Warning } from "./warning";
+type Func1 = () => Promise<any>
+type Func2 = (status: (statusTxt: string) => void) => Promise<any>
+type Func3 = (status: (statusTxt: string) => void, warn: (warning: Warning) => void) => Promise<any>
 
-
-type myFunc = ( () => Promise<any> ) | ( (status: (statusTxt: string) => void) => Promise<any> ) | ( (status: (statusTxt: string) => void, warn: (warning: Warning) => void) => Promise<any> );
-type TaskTree = ( myFunc )  | TaskObject | TaskArray;
+type TaskFunc = Func1 | Func2 | Func3;
+type TaskTree =  TaskFunc   | TaskObject | TaskArray;
 
 interface TaskObject {
     [x: string]: TaskTree;
@@ -13,42 +15,32 @@ interface TaskObject {
 
 interface TaskArray extends Array<TaskTree> { } 
 
-export type TaskListDescription = {
-    upload?: TaskTree,
-    cleanup?: TaskTree,
-    download?: TaskTree
-}
-export class TaskListBuilder {
-    public fromDescription(description: TaskListDescription): TaskListBuilder{
 
-        this.addTasks('upload', description.upload || [], 1);
-        this.addTasks('clean', description.cleanup || [], 1);
-        this.addTasks('download', description.download || [], 1)
+export type TaskListDescription<T> = {
+    [P in keyof T]: TaskTree
+}
+export class TaskListBuilder {    
+    public fromDescription<T>(description: TaskListDescription<T>): TaskListBuilder{
+        for(const propKey in description) {
+            this.addTasks(propKey, description[propKey],1)
+        }        
         return this;
 
     }
-    private addTasks(type: 'upload' | 'clean' | 'download', obj: any, sequence: number ){
+    private addTasks(sectionName: string, obj: any, sequence: number ){
         Object.keys(obj).forEach(key => {
             if(typeof obj[key] == 'function')
-                this.addTask(type, key, sequence, obj[key])
+                this.addTask(sectionName, key, sequence, obj[key])
             else
-                this.addTasks(type, obj[key], sequence + 1)
+                this.addTasks(sectionName, obj[key], sequence + 1)
         })
-    }
-    public addUploadTask(name: string, sequence: number, runMethod: () => Promise<any>): TaskListBuilder {
-        return this.addTask('upload', name, sequence, runMethod);
-    }
-    public addDownloadTask(name: string, sequence: number, runMethod: () => Promise<any>): TaskListBuilder {
-        return this.addTask('download', name, sequence, runMethod);
-    }
-    public addCleanTask(name: string, sequence: number, runMethod: () => Promise<any>): TaskListBuilder {
-        return this.addTask('clean', name, sequence, runMethod);
-    }
-    private addTask(type: 'upload' | 'clean' | 'download', name: string, sequence: number, runMethod: () => Promise<any>): TaskListBuilder {
+    }    
+    
+    public addTask(sectionName: string, name: string, sequence: number, runMethod: TaskFunc): TaskListBuilder {
         const taskComplete$ = new Subject<boolean>();
         let info$ = new BehaviorSubject<TaskInfo>({
             name,
-            type,
+            sectionName,
             enterDate: moment().format('HH:mm:ss'),
             startDate: '',
             finishDate: '',
@@ -77,7 +69,7 @@ export class TaskListBuilder {
         }
         let task = {
             name,
-            type,
+            sectionName,
             sequence,
             info: info$.asObservable(),
             init: () => {
@@ -165,7 +157,7 @@ export class TaskListBuilder {
 }
 
 
-export function taskListFromDescription(description: TaskListDescription): Task[] {
+export function taskListFromDescription<T>(description: TaskListDescription<T>): Task[] {
     return new TaskListBuilder()
         .fromDescription(description)
         .buildTasks();

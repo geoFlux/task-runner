@@ -1,11 +1,11 @@
 import { SyncService } from './sync-service'
 import { TaskListBuilder } from './task-list-builder'
 import assert from 'assert'
-describe.only('sync-service', () => {
+describe('sync-service', () => {
     it('should run a single task', async () =>{
         const tb = new TaskListBuilder();
         let downloadTaskRan = false;
-        tb.addDownloadTask('My test task',1, async () => {
+        tb.addTask('download','My test task',1, async () => {
             await wait(2);
             downloadTaskRan = true;
         })
@@ -40,7 +40,7 @@ describe.only('sync-service', () => {
         assert.equal(runStack.some(x => x == 'download'), true, 'Download task did not run')
 
     })
-    it.only('should run tasks in order', async () => {
+    it('should run tasks in order', async () => {
         const sync = new SyncService();
         const runStack: string[] = []
 
@@ -73,6 +73,7 @@ describe.only('sync-service', () => {
                 }
             }
         })
+        
 
         await syncInfo.finished$.take(1).toPromise();
         
