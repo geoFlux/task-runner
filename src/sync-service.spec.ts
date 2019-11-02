@@ -119,7 +119,7 @@ describe('sync-service', () => {
 
         syncInfo.tasks$
             .takeUntil(syncInfo.finished$)
-            .map(x => x.find(y => y.sectionName == 'upload'))
+            .map(x => x.find(y => y.name == 'upload desc 1'))
             .subscribe(x => {
                 statusText = x == null ? null: x.statusText
             })
@@ -132,7 +132,7 @@ describe('sync-service', () => {
         assert.equal(runStack.some(x => x == 'clean'), true, 'Clean task did not run')
         assert.equal(runStack.some(x => x == 'download'), true, 'Download task did not run')
     })
-    it('should accumilate all warnings', async () => {
+    it('should accumulate all warnings', async () => {
         const sync = new SyncService();
         const runStack: string[] = []
 
@@ -166,6 +166,7 @@ describe('sync-service', () => {
         assert.equal(runStack.some(x => x == 'clean'), true, 'Clean task did not run')
         assert.equal(runStack.some(x => x == 'download'), true, 'Download task did not run')
     })
+    
 })
 
 /**

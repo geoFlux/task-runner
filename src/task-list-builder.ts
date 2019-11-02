@@ -19,7 +19,7 @@ interface TaskArray extends Array<TaskTree> { }
 
 
 export type TaskListDescription<T> = {
-    [P in keyof T]: TaskTree
+    [P in keyof T]: TaskObject
 }
 export class TaskListBuilder {    
     public fromDescription<T>(description: TaskListDescription<T>): TaskListBuilder{
