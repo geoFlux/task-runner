@@ -11,9 +11,9 @@ interface TaskObject {
     [x: string]: TaskTree;
 }
 
-interface TaskArray extends Array<TaskTree> { }
+interface TaskArray extends Array<TaskTree> { } 
 
-type TaskListDescription = {
+export type TaskListDescription = {
     upload?: TaskTree,
     cleanup?: TaskTree,
     download?: TaskTree
@@ -162,4 +162,11 @@ export class TaskListBuilder {
     public buildTasks(): Task[] {
         return this.tasks;
     }
+}
+
+
+export function taskListFromDescription(description: TaskListDescription): Task[] {
+    return new TaskListBuilder()
+        .fromDescription(description)
+        .buildTasks();
 }
