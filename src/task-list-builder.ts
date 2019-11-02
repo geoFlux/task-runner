@@ -36,9 +36,7 @@ export class TaskListBuilder {
         return this;
 
     }    
-    crackDescription<T>(
-        description: TaskListDescription<T>
-    ): {
+    crackDescription<T>(description: TaskListDescription<T>): {
         topLevelFuncs: { name: string; func: TaskFunc }[];
         topLevelTrees: { name: string; tree: TaskListDescription<T> }[];
     } {
