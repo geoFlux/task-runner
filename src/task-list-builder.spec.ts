@@ -65,6 +65,60 @@ describe('TaskListBuilder', () => {
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         })
     })
+    describe('fromArray', () => {
+        it('accepts an array of name, task pairs and runs them', async () => {
+            const sync = new SyncService();            
+            const bld = new TaskListBuilder();
+
+            const runStack: string[] = [];
+            const tasks = bld
+                .fromArray([              
+                    {name:'upload 1', task: () => delayRun(() => runStack.push('upload'))},
+                    {name:'upload 2', task: () => delayRun(() => runStack.push('upload'))},
+                    {name:'upload 3', task:() => delayRun(() => runStack.push('upload'))},            
+                ]).buildTasks()
+
+            const syncInfo = sync.beginSync(tasks);
+            
+            await syncInfo.finished$.take(1).toPromise();
+            assert.equal(runStack.length, 3, 'expected all tasks to run')
+        } )
+        it('accepts an array of TaskFuncs and runs them', async () => {
+            const sync = new SyncService();            
+            const bld = new TaskListBuilder();
+
+            const runStack: string[] = [];
+            const tasks = bld
+                .fromArray([              
+                    () => delayRun(() => runStack.push('upload')),
+                    () => delayRun(() => runStack.push('upload')),
+                    () => delayRun(() => runStack.push('upload')),            
+                ]).buildTasks()
+
+            const syncInfo = sync.beginSync(tasks);
+            
+            await syncInfo.finished$.take(1).toPromise();
+            assert.equal(runStack.length, 3, 'expected all tasks to run')
+        } )
+        it('accepts an array of Promises and runs them', async () => {
+            const sync = new SyncService();            
+            const bld = new TaskListBuilder();
+
+            const runStack: string[] = [];
+             const promises = [              
+                delayRun(() => runStack.push('upload')),
+                delayRun(() => runStack.push('upload')),
+                delayRun(() => runStack.push('upload')),            
+            ]
+            const tasks = bld
+                .fromArray(promises).buildTasks()
+
+            const syncInfo = sync.beginSync(tasks);
+            
+            await syncInfo.finished$.take(1).toPromise();
+            assert.equal(runStack.length, 3, 'expected all tasks to run')
+        } )        
+    })    
 })
 
 async function delayRun(func: Function, delay?: number) {
@@ -72,6 +126,7 @@ async function delayRun(func: Function, delay?: number) {
     await wait(delay);
     func();
 }
+const myPromise = wait(4)
 function wait(delay: number){
     return new Promise(resolve => {
         setTimeout(() => {

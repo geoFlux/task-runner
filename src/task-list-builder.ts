@@ -17,8 +17,8 @@ interface TaskObject {
 }
 
 interface TaskArray extends Array<TaskTree> { } 
-
-
+export type NamedTask = { name: string; task: TaskFunc }
+export type FromArrayArgs = NamedTask[] | TaskFunc[] | Promise<any>[]
 export type TaskListDescription<T> = {
     [P in keyof T]: TaskTree
 }
@@ -35,9 +35,43 @@ export class TaskListBuilder {
              
         return this;
 
-    }    
-    crackDescription<T>(description: TaskListDescription<T>): {
-        topLevelFuncs: { name: string; func: TaskFunc }[];
+    }
+    public fromArray(tasks: FromArrayArgs): TaskListBuilder {
+        if(tasks.every((x: any) => x['then'])) {
+            const namedTasks = (tasks as any[] as Promise<any>[])
+                .map(x => () => x)
+                .map((x,idx) => ({
+                    name: `${idx}`,
+                    task: x
+                }))
+            this.addTasksFromNameValue('',namedTasks)
+        }
+        else if(tasks.every((x: any) => typeof(x) == 'function')){
+            const namedTasks = (<any[]>tasks).map((x: any,idx) => ({
+                name: `${idx}`,
+                task: x
+            }))
+            this.addTasksFromNameValue('',namedTasks)
+        }
+        else {
+            this.addTasksFromNameValue('', tasks as any)
+        }
+        return this
+    }
+    public from<T>(target: TaskListDescription<T> | FromArrayArgs): TaskListBuilder {
+        function isArrayArgs(obj: TaskListDescription<T> | FromArrayArgs): obj is FromArrayArgs {
+            return Array.isArray(obj)            
+        }
+        if(isArrayArgs(target)) {
+            this.fromArray(target)
+        }
+        else {
+            this.fromDescription(target);
+        }
+        return this
+    }
+    private crackDescription<T>(description: TaskListDescription<T>): {
+        topLevelFuncs: { name: string; task: TaskFunc }[];
         topLevelTrees: { name: string; tree: TaskListDescription<T> }[];
     } {
         const desc = description as any;
@@ -45,7 +79,7 @@ export class TaskListBuilder {
             .filter(key => typeof desc[key] == "function")
             .map(key => ({
                 name: key,
-                func: desc[key]
+                task: desc[key]
             }));
     
         let topLevelTrees: any[] = [];
@@ -63,9 +97,9 @@ export class TaskListBuilder {
             topLevelTrees
         };
     }
-    private addTasksFromNameValue(section: string, obj: {name: string, func: TaskFunc}[]){
+    private addTasksFromNameValue(section: string, obj: {name: string, task: TaskFunc}[]){
         let tmp = {} as any;
-        obj.forEach(x => tmp[x.name] = x.func)
+        obj.forEach(x => tmp[x.name] = x.task)
         this.addTasks(section, tmp, 1)
     }
 
@@ -250,5 +284,11 @@ export class TaskListBuilder {
 export function taskListFromDescription<T>(description: TaskListDescription<T>): Task[] {
     return new TaskListBuilder()
         .fromDescription(description)
+        .buildTasks();
+}
+
+export function taskListFrom<T>(target: TaskListDescription<T> | FromArrayArgs): Task[] {
+    return new TaskListBuilder()
+        .from(target)
         .buildTasks();
 }

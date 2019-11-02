@@ -1,11 +1,11 @@
 import { Subject, Observable, BehaviorSubject, ReplaySubject } from 'rxjs';
 import  moment from 'moment';
-import { TaskInfo, SyncInfo, SyncResult, Task } from './sync-models';
+import { TaskInfo, SyncInfo, SyncResult, Task, isTask } from './sync-models';
 import { CancelToken, getCancelToken } from "./cancel-token";
 import { TaskListRunner } from './task-list-runner';
 import flatMap from 'lodash.flatmap'
 import { Warning } from './warning';
-import { taskListFromDescription, TaskListDescription } from './task-list-builder';
+import { taskListFrom, TaskListDescription, FromArrayArgs } from './task-list-builder';
 
 /*
   Generated class for the SyncProvider provider.
@@ -23,17 +23,8 @@ export class SyncService{
     private progress = new Subject<number>();
     private isSyncing = new BehaviorSubject(false);
     private finished$: Subject<SyncResult> = new ReplaySubject<SyncResult>(1);;
-    public beginSync<T>(tasks: Task[] | TaskListDescription<T>): SyncInfo{
-        let taskArray: Task[]
-        function isTaskListDescription(obj: Task[] | TaskListDescription<T>): obj is TaskListDescription<T>{
-            return !Array.isArray(obj);
-        }
-        if(isTaskListDescription(tasks)){
-            taskArray = taskListFromDescription(tasks);
-        }
-        else{
-            taskArray = tasks;
-        }
+    public beginSync<T>(target: Task[] | TaskListDescription<T> | FromArrayArgs): SyncInfo{
+        let taskArray = this.getTaskArray(target)
         const cancelToken = getCancelToken();
         
 
@@ -55,6 +46,23 @@ export class SyncService{
         }
     }
 
+    private getTaskArray<T>(target: Task[] | TaskListDescription<T> | FromArrayArgs) {
+        let taskArray: Task[]
+        function isTaskListDescription(obj: Task[] | TaskListDescription<T> | FromArrayArgs): obj is TaskListDescription<T>{
+            return !Array.isArray(obj);
+        }
+        
+        function isFromArrayArgs(obj: Task[] | FromArrayArgs): obj is FromArrayArgs {                        
+            return !obj.every((x: any) => isTask(x))                            
+        }
+        if(isTaskListDescription(target) || isFromArrayArgs(target)){
+            taskArray = taskListFrom(target);
+        }        
+        else{
+            taskArray = target;
+        }
+        return taskArray;
+    }
     
     private async sync(tasks: Task[], cancelToken: CancelToken){
         this.progress.next(0);

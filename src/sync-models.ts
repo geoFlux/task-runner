@@ -9,7 +9,14 @@ export interface Task {
     info: Observable<TaskInfo>,
     run: (cancelToken: CancelToken) => Promise<void>
 }
-
+export function isTask(obj: any): obj is Task {
+    return obj.hasOwnProperty('name')
+        && obj.hasOwnProperty('sectionName')
+        && obj.hasOwnProperty('sequence')
+        && obj.hasOwnProperty('info')
+        && obj.hasOwnProperty('run')
+        && typeof obj['run'] == 'function'
+}
 export interface TaskInfo {
     name: string,
     sectionName: string,

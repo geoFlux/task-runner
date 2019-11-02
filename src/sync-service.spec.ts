@@ -167,6 +167,55 @@ describe('SyncService', () => {
             assert.equal(runStack.some(x => x == 'clean'), true, 'Clean task did not run')
             assert.equal(runStack.some(x => x == 'download'), true, 'Download task did not run')
         })
+
+        it('accepts an array of name, task pairs and runs them', async () => {
+            const sync = new SyncService();            
+            const bld = new TaskListBuilder();
+
+            const runStack: string[] = [];
+            const target = [              
+                {name:'upload 1', task: () => delayRun(() => runStack.push('upload'))},
+                {name:'upload 2', task: () => delayRun(() => runStack.push('upload'))},
+                {name:'upload 3', task:() => delayRun(() => runStack.push('upload'))},            
+            ];            
+
+            const syncInfo = sync.beginSync(target);
+            
+            await syncInfo.finished$.take(1).toPromise();
+            assert.equal(runStack.length, 3, 'expected all tasks to run')
+        } )
+        it('accepts an array of TaskFuncs and runs them', async () => {
+            const sync = new SyncService();            
+            const bld = new TaskListBuilder();
+
+            const runStack: string[] = [];
+            const target = [              
+                () => delayRun(() => runStack.push('upload')),
+                () => delayRun(() => runStack.push('upload')),
+                () => delayRun(() => runStack.push('upload')),            
+            ]
+
+            const syncInfo = sync.beginSync(target);
+            
+            await syncInfo.finished$.take(1).toPromise();
+            assert.equal(runStack.length, 3, 'expected all tasks to run')
+        } )
+        it('accepts an array of Promises and runs them', async () => {
+            const sync = new SyncService();            
+            const bld = new TaskListBuilder();
+
+            const runStack: string[] = [];
+            const target = [              
+                delayRun(() => runStack.push('upload')),
+                delayRun(() => runStack.push('upload')),
+                delayRun(() => runStack.push('upload')),            
+            ]            
+
+            const syncInfo = sync.beginSync(target);
+            
+            await syncInfo.finished$.take(1).toPromise();
+            assert.equal(runStack.length, 3, 'expected all tasks to run')
+        } ) 
     })
     
     
