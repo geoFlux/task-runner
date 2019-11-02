@@ -25,6 +25,18 @@ export type TaskListDescription<T> = {
 export class TaskListBuilder {    
     public fromDescription<T>(description: TaskListDescription<T>): TaskListBuilder{
         
+        const {topLevelFuncs, topLevelTrees} = this.crackDescription(description);
+
+        if(topLevelFuncs.length > 0){
+            this.addTasksFromNameValue('', topLevelFuncs)//TODO: guarantee top level name isn't already a section name
+        }
+        
+        topLevelTrees.forEach(x => this.addTasks(x.name, x.tree,1))
+             
+        return this;
+
+    }    
+    private crackDescription<T>(description: TaskListDescription<T>): {topLevelFuncs: {name: string, func: TaskFunc}[], topLevelTrees: {name: string, tree: TaskListDescription<T>}[] } {
         const desc = description as any;
         const topLevelFuncs = Object.keys(desc)
             .filter(key => typeof desc[key] == 'function')
@@ -32,22 +44,26 @@ export class TaskListBuilder {
                 name: key,
                 func: desc[key]
             }))
-        if(topLevelFuncs.length > 0) {
-            this.addTasksFromNameValue('root', topLevelFuncs);//TODO: guarantee top level name isn't already a section name            
-        }
-         
+
+        let topLevelTrees:any[] = []
         for(const propKey in description) {
             if(typeof description[propKey] != 'function'){
-                this.addTasks(propKey, description[propKey],1)
+                topLevelTrees.push(({
+                    name: propKey,
+                    tree: description[propKey]
+                }))                
             }
-        }        
-        return this;
+        }
 
-    }    
+        return {
+            topLevelFuncs,
+            topLevelTrees
+        }               
+    }
     private addTasksFromNameValue(section: string, obj: {name: string, func: TaskFunc}[]){
         let tmp = {} as any;
         obj.forEach(x => tmp[x.name] = x.func)
-        this.addTasks('root', tmp, 1)
+        this.addTasks(section, tmp, 1)
     }
 
     private maxInFlightTasks: number = 0;//zero for no limit
