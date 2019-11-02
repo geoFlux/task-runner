@@ -44,6 +44,27 @@ describe('TaskListBuilder', () => {
             assert.equal(maxNumRunningTasksSeen, 4, 'expected running tasks to be less that 4')
         })        
     })
+    describe('fromDescription', () => {
+        it('accepts top level promises', async () => {
+            const sync = new SyncService();            
+            const bld = new TaskListBuilder();
+
+            const runStack: string[] = [];
+            const tasks = bld
+                .fromDescription({                
+                    'upload 1': () => delayRun(() => runStack.push('upload')),
+                    'upload 2': () => delayRun(() => runStack.push('upload')),
+                    'upload 3': () => delayRun(() => runStack.push('upload')),
+                
+                }).buildTasks()
+            const cancelToken = getCancelToken();
+
+            const syncInfo = sync.beginSync(tasks);
+            
+            const result = await syncInfo.finished$.take(1).toPromise();
+            assert.equal(runStack.length, 3, 'expected all tasks to run')
+        })
+    })
 })
 
 async function delayRun(func: Function, delay?: number) {

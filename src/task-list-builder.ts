@@ -20,16 +20,36 @@ interface TaskArray extends Array<TaskTree> { }
 
 
 export type TaskListDescription<T> = {
-    [P in keyof T]: TaskObject
+    [P in keyof T]: TaskTree
 }
 export class TaskListBuilder {    
     public fromDescription<T>(description: TaskListDescription<T>): TaskListBuilder{
+        
+        const desc = description as any;
+        const topLevelFuncs = Object.keys(desc)
+            .filter(key => typeof desc[key] == 'function')
+            .map(key => ({
+                name: key,
+                func: desc[key]
+            }))
+        if(topLevelFuncs.length > 0) {
+            this.addTasksFromNameValue('root', topLevelFuncs);//TODO: guarantee top level name isn't already a section name            
+        }
+         
         for(const propKey in description) {
-            this.addTasks(propKey, description[propKey],1)
+            if(typeof description[propKey] != 'function'){
+                this.addTasks(propKey, description[propKey],1)
+            }
         }        
         return this;
 
+    }    
+    private addTasksFromNameValue(section: string, obj: {name: string, func: TaskFunc}[]){
+        let tmp = {} as any;
+        obj.forEach(x => tmp[x.name] = x.func)
+        this.addTasks('root', tmp, 1)
     }
+
     private maxInFlightTasks: number = 0;//zero for no limit
     
     private inFlightRefCounter = (() => {
