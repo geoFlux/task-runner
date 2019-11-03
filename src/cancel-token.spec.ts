@@ -1,5 +1,5 @@
 import { getCancelToken } from "./cancel-token"
-import assert = require("assert");
+import {fake, expect, assert } from './test-util/helpers'
 
 describe('CancelToken',() => {
     describe('cancel', () => {
@@ -7,6 +7,7 @@ describe('CancelToken',() => {
         
             const token = getCancelToken();
             token.cancel()
+            
             assert.equal(token.isCanceled(), true, 'isCanceled should be true')
             assert.equal(token.isValid(),true, 'isValid should be true')        
         })

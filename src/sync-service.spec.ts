@@ -1,7 +1,9 @@
 import { SyncService } from './sync-service'
 import { TaskListBuilder } from './task-list-builder'
-import assert from 'assert'
 import { GenericWarning } from './warning'
+import { wait, delayRun } from './test-util/delay-run'
+import {fake, expect, assert } from './test-util/helpers'
+
 describe('SyncService', () => {
     describe('BeginSync', () => {
         it('should run a single task', async () =>{
@@ -22,24 +24,28 @@ describe('SyncService', () => {
         it('should run tasks from description', async () => {
             const sync = new SyncService();
             const runStack: string[] = []
-    
+
+            const uploadTask1 = fake();
+            const cleanTask1 = fake();
+            const downloadTask1 = fake();
+
             const syncInfo = sync.beginSync({
                 upload: {
-                    'upload desc 1': () => delayRun(() => runStack.push('upload'))
+                    'upload desc 1': () => delayRun(() => uploadTask1())
                 },
                 cleanup: {
-                    'clean task 1': () => delayRun(() => runStack.push('clean'))
+                    'clean task 1': () => delayRun(() => cleanTask1())
                 },
                 download: {
-                    'download task 2': () => delayRun(() => runStack.push('download'))
+                    'download task 2': () => delayRun(() => downloadTask1())
                 }
             })
     
             await syncInfo.finished$.take(1).toPromise();
             
-            assert.equal(runStack.some(x => x == 'upload'), true, 'Upload task did not run')
-            assert.equal(runStack.some(x => x == 'clean'), true, 'Clean task did not run')
-            assert.equal(runStack.some(x => x == 'download'), true, 'Download task did not run')
+            expect(uploadTask1).to.have.been.called
+            expect(cleanTask1).to.have.been.called
+            expect(downloadTask1).to.have.been.called            
     
         })
         it('should run tasks in order', async () => {
@@ -199,6 +205,7 @@ describe('SyncService', () => {
             
             await syncInfo.finished$.take(1).toPromise();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
+            
         } )
         it('accepts an array of Promises and runs them', async () => {
             const sync = new SyncService();            
@@ -221,20 +228,3 @@ describe('SyncService', () => {
     
 })
 
-/**
- * run the given function asynchronously after waiting for timeout milliseconds
- * @param func the function to run
- * @param delay amount of time in milliseconds to wait before running the given function
- */
-async function delayRun(func: Function, delay?: number) {
-    delay = delay || 0;
-    await wait(delay);
-    func();
-}
-function wait(delay: number){
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve()
-        }, delay)
-    })
-}

@@ -1,8 +1,9 @@
 import { TaskListRunner } from "./task-list-runner";
 import { TaskListBuilder } from "./task-list-builder";
 import { getCancelToken } from "./cancel-token";
-import assert = require("assert");
 import { SyncService } from "./sync-service";
+import { delayRun, wait } from "./test-util/delay-run";
+import {fake, expect, assert } from './test-util/helpers'
 
 describe('TaskListBuilder', () => {
     describe('limitInFlightTasks',() => {
@@ -120,18 +121,3 @@ describe('TaskListBuilder', () => {
         } )        
     })    
 })
-
-async function delayRun(func: Function, delay?: number) {
-    delay = delay || 0;
-    await wait(delay);
-    func();
-}
-const myPromise = wait(4)
-function wait(delay: number){
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve()
-        }, delay)
-    })
-
-}

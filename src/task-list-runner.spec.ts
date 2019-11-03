@@ -1,7 +1,8 @@
 import { TaskListRunner } from './task-list-runner'
 import { TaskListBuilder } from './task-list-builder'
-import assert from  'assert';
 import { getCancelToken } from './cancel-token';
+import { delayRun } from './test-util/delay-run';
+import {fake, expect, assert } from './test-util/helpers'
 
 describe('TaskListRunner', () => {
     it('should run tasks with arbitrary section names', async  () => {
@@ -62,17 +63,3 @@ describe('TaskListRunner', () => {
         assert.equal(runStack.length, 1, 'only upload task should run')
     })
 })
-
-async function delayRun(func: Function, delay?: number) {
-    delay = delay || 0;
-    await wait(delay);
-    func();
-}
-function wait(delay: number){
-    return new Promise(resolve => {
-        setTimeout(() => {
-            resolve()
-        }, delay)
-    })
-
-}
