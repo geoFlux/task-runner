@@ -1,6 +1,7 @@
 import { Task, TaskInfo } from "./job-models";
 import { CancelToken } from "./cancel-token";
-import { BehaviorSubject, Observable, Subject } from "rxjs";
+import { BehaviorSubject, Observable, Subject, interval } from "rxjs";
+import { filter, take, map, startWith, takeUntil } from "rxjs/operators"
 import  moment from 'moment';
 import { Warning, GenericWarning } from "./warning";
 import { isPromise } from "./util/is-promise";
@@ -84,7 +85,7 @@ export class TaskListBuilder {
         topLevelTrees: { name: string; tree: TaskListDescription<T> }[];
     } {
         const desc = description as any;
-        const topLevelFuncs = Object.keys(desc)
+        const topLevelFuncs = Object.keys(desc)            
             .filter(key => typeof desc[key] == "function")
             .map(key => ({
                 name: key,
@@ -119,8 +120,10 @@ export class TaskListBuilder {
         const waitToProceed = async () => {                
             if(this.maxInFlightTasks <= 0) return;
             await inFlight
-                .filter(numTasksInFlight => numTasksInFlight < this.maxInFlightTasks)
-                .take(1)
+                .pipe(
+                    filter(numTasksInFlight => numTasksInFlight < this.maxInFlightTasks),
+                    take(1)
+                )                                                
                 .toPromise();
         };
 
@@ -220,10 +223,12 @@ export class TaskListBuilder {
                     //start timer
                     if(!cancelToken.isCanceled()){
                         const startTime = moment();
-                        Observable.interval(1000)
-                            .map(t => moment(moment(new Date()).diff(startTime)).format('mm:ss'))
-                            .startWith('< 1')
-                            .takeUntil(taskComplete$)
+                        interval(1000)
+                            .pipe(
+                                map(t => moment(moment(new Date()).diff(startTime)).format('mm:ss')),
+                                startWith('< 1'),
+                                takeUntil(taskComplete$)
+                            )
                             .subscribe(taskTime => {
                                 info$.next({
                                     ...info$.value,

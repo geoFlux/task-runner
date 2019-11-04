@@ -3,8 +3,8 @@ import { TaskListBuilder } from "./task-list-builder";
 import { getCancelToken } from "./cancel-token";
 import { JobService } from "./job-service";
 import { delayRun, wait } from "./test-util/delay-run";
-import {fake, expect, assert } from './test-util/helpers'
-
+import { fake, expect, assert } from './test-util/helpers'
+import { take, takeUntil, map } from 'rxjs/operators'
 describe('TaskListBuilder', () => {
     describe('limitInFlightTasks',() => {
         it('should limit the number of tasks that run in parallel', async  () => {
@@ -34,14 +34,16 @@ describe('TaskListBuilder', () => {
             const syncInfo = sync.beginSync(tasks);
             let maxNumRunningTasksSeen = 0;
             syncInfo.tasks$
-                .takeUntil(syncInfo.finished$)
-                .map(x => x.filter(y => y.isRunning))
+                .pipe(
+                    takeUntil(syncInfo.finished$),
+                    map(x => x.filter(y => y.isRunning))
+                )                
                 .subscribe(taskInfos => {
                     if(taskInfos.length > maxNumRunningTasksSeen){
                         maxNumRunningTasksSeen = taskInfos.length
                     }                    
                 })
-            const result = await syncInfo.finished$.take(1).toPromise();
+            const result = await syncInfo.waitForCompletion();
             assert.equal(maxNumRunningTasksSeen, 4, 'expected running tasks to be less that 4')
         })        
     })
@@ -62,7 +64,7 @@ describe('TaskListBuilder', () => {
 
             const syncInfo = sync.beginSync(tasks);
             
-            const result = await syncInfo.finished$.take(1).toPromise();
+            const result = await syncInfo.waitForCompletion();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         })
     })
@@ -81,7 +83,7 @@ describe('TaskListBuilder', () => {
 
             const syncInfo = sync.beginSync(tasks);
             
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } )
         it('accepts an array of TaskFuncs and runs them', async () => {
@@ -98,7 +100,7 @@ describe('TaskListBuilder', () => {
 
             const syncInfo = sync.beginSync(tasks);
             
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } )
         it('accepts an array of Promises and runs them', async () => {
@@ -116,7 +118,7 @@ describe('TaskListBuilder', () => {
 
             const syncInfo = sync.beginSync(tasks);
             
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } )        
     })    

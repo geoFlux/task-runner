@@ -3,7 +3,7 @@ import { TaskListBuilder } from './task-list-builder'
 import { GenericWarning } from './warning'
 import { wait, delayRun } from './test-util/delay-run'
 import {fake, expect, assert } from './test-util/helpers'
-import {  } from 'chai'
+import { takeUntil, map } from 'rxjs/operators'
 describe('SyncService', () => {
     describe('beginSync', () => {
         it('should run a single task', async () =>{
@@ -16,7 +16,7 @@ describe('SyncService', () => {
             const sync = new JobService();
             const syncInfo = sync.beginSync(tb.buildTasks())
     
-            const result = await syncInfo.finished$.take(1).toPromise()
+            const result = await syncInfo.waitForCompletion()
             
             assert.equal(result.error, null, 'Did not expect any error')
             assert.equal(downloadTaskRan, true, 'Download task did not run')
@@ -42,7 +42,7 @@ describe('SyncService', () => {
                 }
             })
     
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             
             expect(uploadTask1).to.have.been.called
             expect(cleanTask1).to.have.been.called
@@ -84,7 +84,7 @@ describe('SyncService', () => {
             })
             
     
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             
     
             
@@ -126,13 +126,15 @@ describe('SyncService', () => {
             let statusText: string | null = null
     
             syncInfo.tasks$
-                .takeUntil(syncInfo.finished$)
-                .map(x => x.find(y => y.name == 'upload desc 1'))
+                .pipe(
+                    takeUntil(syncInfo.finished$),
+                    map(x => x.find(y => y.name == 'upload desc 1'))
+                )                                
                 .subscribe(x => {
                     statusText = x == null ? null: x.statusText
                 })
                         
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             
             assert.equal(statusText, 'uploadStatus');
     
@@ -166,7 +168,7 @@ describe('SyncService', () => {
                 },                 
             })                
                         
-            const result = await syncInfo.finished$.take(1).toPromise();
+            const result = await syncInfo.waitForCompletion();
             
             assert.equal(result.warnings.length, 4, 'expected 4 warnings to be returned')
     
@@ -188,7 +190,7 @@ describe('SyncService', () => {
 
             const syncInfo = sync.beginSync(target);
             
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } )
         it('accepts an array of TaskFuncs and runs them', async () => {
@@ -204,7 +206,7 @@ describe('SyncService', () => {
 
             const syncInfo = sync.beginSync(target);
             
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
             
         } )
@@ -221,7 +223,7 @@ describe('SyncService', () => {
 
             const syncInfo = sync.beginSync(target);
             
-            await syncInfo.finished$.take(1).toPromise();
+            await syncInfo.waitForCompletion();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } ) 
         it('should run a function that returns a promise', async () =>{
@@ -229,7 +231,7 @@ describe('SyncService', () => {
             
             await new JobService()
                 .beginSync(() => downloadTask())
-                .finished$.take(1).toPromise()            
+                .waitForCompletion()            
             
             expect(downloadTask).to.have.been.calledOnce
         })
@@ -239,7 +241,7 @@ describe('SyncService', () => {
             
             await new JobService()
                 .beginSync(downloadTask)
-                .finished$.take(1).toPromise()            
+                .waitForCompletion()            
             
             expect(downloadTaskRan).to.be.true
         })

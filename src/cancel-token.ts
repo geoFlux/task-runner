@@ -1,5 +1,5 @@
 import { BehaviorSubject } from "rxjs";
-
+import { takeUntil, filter, take } from 'rxjs/operators'
 export interface CancelToken {
     cancel: () => void;
     isCanceled: () => boolean;
@@ -16,11 +16,14 @@ export const getCancelToken = (): CancelToken =>{
         isCanceled: () => canceled$.value,
         invalidate: () => isValid$.next(false),
         isValid: () => isValid$.value,
-        waitForCancelation: async () => {
+        waitForCancelation: async () => {            
             return canceled$.asObservable()
-                .takeUntil(isValid$.filter(t => t == false))
-                .filter(canceled => canceled == true)
-                .take(1)
+                .pipe(
+                    takeUntil(isValid$.pipe(filter(t => t == false))
+                    ),
+                    filter(canceled => canceled == true),
+                    take(1),
+                )
                 .toPromise();
         }
     }

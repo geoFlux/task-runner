@@ -1,4 +1,4 @@
-import { Subject, Observable, BehaviorSubject, ReplaySubject } from 'rxjs';
+import { Subject, Observable, BehaviorSubject, ReplaySubject, interval, combineLatest } from 'rxjs';
 import moment from 'moment';
 import { TaskInfo, JobInfo, JobResult, Task, isTask } from './job-models';
 import { CancelToken, getCancelToken } from "./cancel-token";
@@ -7,7 +7,7 @@ import flatMap from 'lodash.flatmap';
 import { Warning } from './warning';
 import { taskListFrom, TaskListDescription, ArrayOfTaskLike, JobDescription } from './task-list-builder';
 import { isPromise } from './util/is-promise';
-
+import { filter, takeUntil, map, take } from 'rxjs/operators'
 export class Job<T> {
     private taskArray: Task[];
     private taskRunner = new TaskListRunner();
@@ -48,27 +48,33 @@ export class Job<T> {
         }, 10);
         this.isSyncing.next(true);
         const startTime = moment();
+        
         return {
             tasks$: this.currentTaskInfos.asObservable(),
             progress$: this.progress.asObservable(),
-            syncTime$: Observable.interval(1000)
-                .takeUntil(this.isSyncing.filter(x => x == false))
-                .map(t => moment(moment(new Date()).diff(startTime)).format('mm:ss')),
+            syncTime$: interval(1000)
+                .pipe(
+                    takeUntil(this.isSyncing.pipe(filter(x => x == false))),
+                    map(t => moment(moment(new Date()).diff(startTime)).format('mm:ss'))
+                ),
             cancelToken: this.cancelToken,
             finished$: this.finished$.asObservable(),
             waitForCompletion: this.waitForCompletion
         };
     }
     public async waitForCompletion(): Promise<JobResult> {
-        const result = await this.finished$.take(1).toPromise();
+        const result = await this.finished$.pipe(take(1)).toPromise();
         return result
     }
     private async sync(tasks: Task[], cancelToken: CancelToken) {
         this.progress.next(0);
         const taskInfos = tasks.map(t => t.info);
         let warnings: Warning[] = [];
-        Observable.combineLatest(taskInfos)
-            .takeUntil(this.isSyncing.filter(x => x == false))
+        combineLatest
+        combineLatest(taskInfos)
+            .pipe(            
+                takeUntil(this.isSyncing.pipe(filter(x => x == false)))
+            )            
             .subscribe(infos => {
                 this.currentTaskInfos.next(infos);
                 const total = infos.length;
@@ -77,10 +83,12 @@ export class Job<T> {
                 warnings = flatMap(infos, info => info.warnings);
             });
         let error: any = null;
-        Observable.combineLatest(taskInfos)
-            .takeUntil(this.isSyncing.filter(x => x == false))
-            .filter(infos => infos.some(i => i.errorCount > 0))
-            .take(1)
+        combineLatest(taskInfos)
+            .pipe(
+                takeUntil(this.isSyncing.pipe(filter(x => x == false))),
+                filter(infos => infos.some(i => i.errorCount > 0)),
+                take(1)
+            )            
             .subscribe(infos => {
                 error = infos.filter(i => i.error != null)[0].error;
                 cancelToken.cancel();
