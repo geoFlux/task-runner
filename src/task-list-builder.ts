@@ -3,6 +3,7 @@ import { CancelToken } from "./cancel-token";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import  moment from 'moment';
 import { Warning, GenericWarning } from "./warning";
+import { isPromise } from "./util/is-promise";
 
 interface TaskFuncArgs {
     status: (statusTxt: string) => void,
@@ -23,8 +24,7 @@ export type TaskListDescription<T> = {
     [P in keyof T]: TaskTree
 }
 export class TaskListBuilder {    
-    public fromDescription<T>(description: TaskListDescription<T>): TaskListBuilder{
-        
+    public fromDescription<T>(description: TaskListDescription<T>): TaskListBuilder{                
         const {topLevelFuncs, topLevelTrees} = this.crackDescription(description);
 
         if(topLevelFuncs.length > 0){
@@ -58,14 +58,21 @@ export class TaskListBuilder {
         }
         return this
     }
-    public from<T>(target: TaskListDescription<T> | FromArrayArgs): TaskListBuilder {
+    public from<T>(target: TaskListDescription<T> | FromArrayArgs | Promise<any>): TaskListBuilder {
         function isArrayArgs(obj: TaskListDescription<T> | FromArrayArgs): obj is FromArrayArgs {
             return Array.isArray(obj)            
         }
-        if(isArrayArgs(target)) {
+        if(isPromise(target)){
+            this.fromArray([target])
+        }
+        else if(isArrayArgs(target)) {
             this.fromArray(target)
         }
+        else if( typeof target == 'function'){
+            this.fromArray([target])
+        }
         else {
+
             this.fromDescription(target);
         }
         return this
@@ -287,7 +294,7 @@ export function taskListFromDescription<T>(description: TaskListDescription<T>):
         .buildTasks();
 }
 
-export function taskListFrom<T>(target: TaskListDescription<T> | FromArrayArgs): Task[] {
+export function taskListFrom<T>(target: TaskListDescription<T> | FromArrayArgs | Promise<any> ): Task[] {
     return new TaskListBuilder()
         .from(target)
         .buildTasks();

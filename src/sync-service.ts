@@ -6,14 +6,10 @@ import { TaskListRunner } from './task-list-runner';
 import flatMap from 'lodash.flatmap'
 import { Warning } from './warning';
 import { taskListFrom, TaskListDescription, FromArrayArgs } from './task-list-builder';
+import { isPromise } from './util/is-promise';
 
-/*
-  Generated class for the SyncProvider provider.
 
-  See https://angular.io/guide/dependency-injection for more info on providers
-  and Angular DI.
-*/
-
+//TODO: rename this, ideas: TaskMaster, JobRunner, JobMonitor, JobService, Engine, Sequencer 
 export class SyncService{
     constructor(
     ){
@@ -23,7 +19,7 @@ export class SyncService{
     private progress = new Subject<number>();
     private isSyncing = new BehaviorSubject(false);
     private finished$: Subject<SyncResult> = new ReplaySubject<SyncResult>(1);;
-    public beginSync<T>(target: Task[] | TaskListDescription<T> | FromArrayArgs): SyncInfo{
+    public beginSync<T>(target: Task[] | TaskListDescription<T> | FromArrayArgs | Promise<any>): SyncInfo{
         let taskArray = this.getTaskArray(target)
         const cancelToken = getCancelToken();
         
@@ -45,17 +41,22 @@ export class SyncService{
             finished$: this.finished$.asObservable()
         }
     }
-
-    private getTaskArray<T>(target: Task[] | TaskListDescription<T> | FromArrayArgs) {
+    public async waitForCompletion(): Promise<SyncResult> {
+        const result = await this.finished$.take(1).toPromise();
+        return result
+    }
+    private getTaskArray<T>(target: Task[] | TaskListDescription<T> | FromArrayArgs |  Promise<any>) {
         let taskArray: Task[]
-        function isTaskListDescription(obj: Task[] | TaskListDescription<T> | FromArrayArgs): obj is TaskListDescription<T>{
+        function isTaskListDescription(obj: Task[] | TaskListDescription<T> | FromArrayArgs |   Promise<any>): obj is TaskListDescription<T>{
             return !Array.isArray(obj);
         }
         
-        function isFromArrayArgs(obj: Task[] | FromArrayArgs): obj is FromArrayArgs {                        
+        function isFromArrayArgs(obj: Task[] | FromArrayArgs |  Promise<any>): obj is FromArrayArgs {                        
+            if(isPromise(obj)) return false
             return !obj.every((x: any) => isTask(x))                            
         }
-        if(isTaskListDescription(target) || isFromArrayArgs(target)){
+        
+        if(isTaskListDescription(target) || isFromArrayArgs(target) || isPromise(target)){
             taskArray = taskListFrom(target);
         }        
         else{

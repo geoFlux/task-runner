@@ -3,9 +3,9 @@ import { TaskListBuilder } from './task-list-builder'
 import { GenericWarning } from './warning'
 import { wait, delayRun } from './test-util/delay-run'
 import {fake, expect, assert } from './test-util/helpers'
-
+import {  } from 'chai'
 describe('SyncService', () => {
-    describe('BeginSync', () => {
+    describe('beginSync', () => {
         it('should run a single task', async () =>{
             const tb = new TaskListBuilder();
             let downloadTaskRan = false;
@@ -21,6 +21,7 @@ describe('SyncService', () => {
             assert.equal(result.error, null, 'Did not expect any error')
             assert.equal(downloadTaskRan, true, 'Download task did not run')
         })
+        
         it('should run tasks from description', async () => {
             const sync = new SyncService();
             const runStack: string[] = []
@@ -90,17 +91,17 @@ describe('SyncService', () => {
             assert.equal(runStack[0], 'upload1', 'Upload task 1 did not run in order')
                            
             const uploadLevel2 = runStack.slice(1,3)
-            assert.equal(uploadLevel2.some(x => x=='upload2'), true, 'Upload task 2 did not run in order')
-            assert.equal(uploadLevel2.some(x => x=='upload3'), true, 'Upload task 3 did not run in order')
+            expect(uploadLevel2).to.contain('upload2','Upload task 2 did not run in order')
+            expect(uploadLevel2).to.contain('upload3','Upload task 3 did not run in order')            
     
             assert.equal(runStack[3], 'clean1', 'Clean 1 task did not run in order')
             assert.equal(runStack[4], 'clean2', 'Clean 2 task did not run in order')
             assert.equal(runStack[5], 'clean3', 'Clean 3 task did not run in order')
     
             const downloadLevel1 = runStack.slice(6,9)
-            assert.equal(downloadLevel1.some(x => x=='download1'), true, 'Download 1 task did not run in order')        
-            assert.equal(downloadLevel1.some(x => x=='download2'), true, 'Download 2 task did not run in order')
-            assert.equal(downloadLevel1.some(x => x=='download3'), true, 'Download 3 task did not run in order')
+            expect(downloadLevel1).to.contain('download1','Download 1 task did not run in order')
+            expect(downloadLevel1).to.contain('download2','Download 2 task did not run in order')
+            expect(downloadLevel1).to.contain('download3','Download 3 task did not run in order')
     
             assert.equal(runStack[9], 'download4', 'Download 4 task did not run in order')
         })
@@ -223,8 +224,36 @@ describe('SyncService', () => {
             await syncInfo.finished$.take(1).toPromise();
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } ) 
+        it('should run a function that returns a promise', async () =>{
+            const downloadTask = fake()      
+            
+            await new SyncService()
+                .beginSync(() => downloadTask())
+                .finished$.take(1).toPromise()            
+            
+            expect(downloadTask).to.have.been.calledOnce
+        })
+        it('should run a Promise', async () => {
+            let downloadTaskRan = false
+            const downloadTask = delayRun(() => downloadTaskRan = true)            
+            
+            await new SyncService()
+                .beginSync(downloadTask)
+                .finished$.take(1).toPromise()            
+            
+            expect(downloadTaskRan).to.be.true
+        })
     })
     
+    describe('waitForCompletion',() => {
+        it('block until sync is complete', async () => {
+            const sync = new SyncService();
+            let syncCompleted = false
+            sync.beginSync([() => delayRun(() => syncCompleted = true,5)])
+            await sync.waitForCompletion();
+            expect(syncCompleted).to.be.true
+        })
+    })
     
 })
 
