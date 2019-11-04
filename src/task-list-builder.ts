@@ -1,8 +1,8 @@
 import { Task, TaskInfo } from "./job-models";
 import { CancelToken } from "./cancel-token";
-import { BehaviorSubject, Observable, Subject, interval } from "rxjs";
+import { BehaviorSubject, Subject, interval } from "rxjs";
 import { filter, take, map, startWith, takeUntil } from "rxjs/operators"
-import  moment from 'moment';
+import  moment from 'moment';//todo: remove moment
 import { Warning, GenericWarning } from "./warning";
 import { isPromise } from "./util/is-promise";
 

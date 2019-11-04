@@ -1,5 +1,5 @@
-import { Subject, Observable, BehaviorSubject, ReplaySubject, interval, combineLatest } from 'rxjs';
-import moment from 'moment';
+import { Subject, BehaviorSubject, ReplaySubject, interval, combineLatest } from 'rxjs';
+import moment from 'moment';//todo: remove moment
 import { TaskInfo, JobInfo, JobResult, Task, isTask } from './job-models';
 import { CancelToken, getCancelToken } from "./cancel-token";
 import { TaskListRunner } from './task-list-runner';
@@ -38,7 +38,7 @@ export class Job<T> {
         }
         return taskArray;
     }
-    public start<T>(): JobInfo {
+    public start(): JobInfo {
         if (this.finishedRunning)
             throw new JobAlreadyCompletedError('Job has already completed');
         if (this.isSyncing.value)
@@ -55,7 +55,7 @@ export class Job<T> {
             syncTime$: interval(1000)
                 .pipe(
                     takeUntil(this.isSyncing.pipe(filter(x => x == false))),
-                    map(t => moment(moment(new Date()).diff(startTime)).format('mm:ss'))
+                    map(() => moment(moment(new Date()).diff(startTime)).format('mm:ss'))
                 ),
             cancelToken: this.cancelToken,
             finished$: this.finished$.asObservable(),
@@ -80,7 +80,7 @@ export class Job<T> {
                 const total = infos.length;
                 const complete = infos.filter(i => i.status == 'finished').length;
                 this.progress.next(Math.floor(complete / total * 100));
-                warnings = flatMap(infos, info => info.warnings);
+                warnings = flatMap(infos, info => info.warnings);//todo: this is the only place flatMap is used, write your own flatMap
             });
         let error: any = null;
         combineLatest(taskInfos)
