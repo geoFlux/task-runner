@@ -1,4 +1,4 @@
-import { Task, TaskInfo } from "./sync-models";
+import { Task, TaskInfo } from "./job-models";
 import { CancelToken } from "./cancel-token";
 import { BehaviorSubject, Observable, Subject } from "rxjs";
 import  moment from 'moment';
@@ -19,10 +19,12 @@ interface TaskObject {
 
 interface TaskArray extends Array<TaskTree> { } 
 export type NamedTask = { name: string; task: TaskFunc }
-export type FromArrayArgs = NamedTask[] | TaskFunc[] | Promise<any>[]
+export type ArrayOfTaskLike = NamedTask[] | TaskFunc[] | Promise<any>[]
 export type TaskListDescription<T> = {
     [P in keyof T]: TaskTree
 }
+export type JobDescription<T> = TaskListDescription<T> | ArrayOfTaskLike | Promise<any>
+
 export class TaskListBuilder {    
     public fromDescription<T>(description: TaskListDescription<T>): TaskListBuilder{                
         const {topLevelFuncs, topLevelTrees} = this.crackDescription(description);
@@ -36,7 +38,7 @@ export class TaskListBuilder {
         return this;
 
     }
-    public fromArray(tasks: FromArrayArgs): TaskListBuilder {
+    public fromArray(tasks: ArrayOfTaskLike): TaskListBuilder {
         if(tasks.every((x: any) => x['then'])) {
             const namedTasks = (tasks as any[] as Promise<any>[])
                 .map(x => () => x)
@@ -58,8 +60,8 @@ export class TaskListBuilder {
         }
         return this
     }
-    public from<T>(target: TaskListDescription<T> | FromArrayArgs | Promise<any>): TaskListBuilder {
-        function isArrayArgs(obj: TaskListDescription<T> | FromArrayArgs): obj is FromArrayArgs {
+    public from<T>(target: JobDescription<T>): TaskListBuilder {
+        function isArrayArgs(obj: TaskListDescription<T> | ArrayOfTaskLike): obj is ArrayOfTaskLike {
             return Array.isArray(obj)            
         }
         if(isPromise(target)){
@@ -294,7 +296,7 @@ export function taskListFromDescription<T>(description: TaskListDescription<T>):
         .buildTasks();
 }
 
-export function taskListFrom<T>(target: TaskListDescription<T> | FromArrayArgs | Promise<any> ): Task[] {
+export function taskListFrom<T>(target: TaskListDescription<T> | ArrayOfTaskLike | Promise<any> ): Task[] {
     return new TaskListBuilder()
         .from(target)
         .buildTasks();

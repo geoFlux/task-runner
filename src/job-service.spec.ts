@@ -1,4 +1,4 @@
-import { SyncService } from './sync-service'
+import { JobService } from './job-service'
 import { TaskListBuilder } from './task-list-builder'
 import { GenericWarning } from './warning'
 import { wait, delayRun } from './test-util/delay-run'
@@ -13,7 +13,7 @@ describe('SyncService', () => {
                 await wait(2);
                 downloadTaskRan = true;
             })
-            const sync = new SyncService();
+            const sync = new JobService();
             const syncInfo = sync.beginSync(tb.buildTasks())
     
             const result = await syncInfo.finished$.take(1).toPromise()
@@ -23,7 +23,7 @@ describe('SyncService', () => {
         })
         
         it('should run tasks from description', async () => {
-            const sync = new SyncService();
+            const sync = new JobService();
             const runStack: string[] = []
 
             const uploadTask1 = fake();
@@ -50,7 +50,7 @@ describe('SyncService', () => {
     
         })
         it('should run tasks in order', async () => {
-            const sync = new SyncService();
+            const sync = new JobService();
             const runStack: string[] = []
     
             //each section will be run sequentially, i.e. first all upload tasks will run, then all clean tasks, etc..
@@ -106,7 +106,7 @@ describe('SyncService', () => {
             assert.equal(runStack[9], 'download4', 'Download 4 task did not run in order')
         })
         it('should be able to get status text from individual tasks', async () => {
-            const sync = new SyncService();
+            const sync = new JobService();
             const runStack: string[] = []
     
             const syncInfo = sync.beginSync({
@@ -141,7 +141,7 @@ describe('SyncService', () => {
             assert.equal(runStack.some(x => x == 'download'), true, 'Download task did not run')
         })
         it('should accumulate all warnings', async () => {
-            const sync = new SyncService();
+            const sync = new JobService();
             const runStack: string[] = []
     
             const syncInfo = sync.beginSync({
@@ -176,7 +176,7 @@ describe('SyncService', () => {
         })
 
         it('accepts an array of name, task pairs and runs them', async () => {
-            const sync = new SyncService();            
+            const sync = new JobService();            
             const bld = new TaskListBuilder();
 
             const runStack: string[] = [];
@@ -192,7 +192,7 @@ describe('SyncService', () => {
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } )
         it('accepts an array of TaskFuncs and runs them', async () => {
-            const sync = new SyncService();            
+            const sync = new JobService();            
             const bld = new TaskListBuilder();
 
             const runStack: string[] = [];
@@ -209,7 +209,7 @@ describe('SyncService', () => {
             
         } )
         it('accepts an array of Promises and runs them', async () => {
-            const sync = new SyncService();            
+            const sync = new JobService();            
             const bld = new TaskListBuilder();
 
             const runStack: string[] = [];
@@ -227,7 +227,7 @@ describe('SyncService', () => {
         it('should run a function that returns a promise', async () =>{
             const downloadTask = fake()      
             
-            await new SyncService()
+            await new JobService()
                 .beginSync(() => downloadTask())
                 .finished$.take(1).toPromise()            
             
@@ -237,7 +237,7 @@ describe('SyncService', () => {
             let downloadTaskRan = false
             const downloadTask = delayRun(() => downloadTaskRan = true)            
             
-            await new SyncService()
+            await new JobService()
                 .beginSync(downloadTask)
                 .finished$.take(1).toPromise()            
             
@@ -247,7 +247,7 @@ describe('SyncService', () => {
     
     describe('waitForCompletion',() => {
         it('block until sync is complete', async () => {
-            const sync = new SyncService();
+            const sync = new JobService();
             let syncCompleted = false
             sync.beginSync([() => delayRun(() => syncCompleted = true,5)])
             await sync.waitForCompletion();

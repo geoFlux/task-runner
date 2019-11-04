@@ -1,4 +1,4 @@
-import { Task } from "./sync-models";
+import { Task } from "./job-models";
 import { CancelToken } from "./cancel-token";
 
 const groupBy = (arr: any, trFunc: any) => arr.reduce((acc: any,item: any) => {

@@ -1,5 +1,5 @@
 import { TaskListBuilder } from "./task-list-builder";
-import { Task } from "./sync-models";
+import { Task } from "./job-models";
 
 
 export class TaskListFactory {

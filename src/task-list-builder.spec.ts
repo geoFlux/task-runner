@@ -1,14 +1,14 @@
 import { TaskListRunner } from "./task-list-runner";
 import { TaskListBuilder } from "./task-list-builder";
 import { getCancelToken } from "./cancel-token";
-import { SyncService } from "./sync-service";
+import { JobService } from "./job-service";
 import { delayRun, wait } from "./test-util/delay-run";
 import {fake, expect, assert } from './test-util/helpers'
 
 describe('TaskListBuilder', () => {
     describe('limitInFlightTasks',() => {
         it('should limit the number of tasks that run in parallel', async  () => {
-            const sync = new SyncService();
+            const sync = new JobService();
             
             const bld = new TaskListBuilder();
             const maxInFlightTasks = 4;
@@ -47,7 +47,7 @@ describe('TaskListBuilder', () => {
     })
     describe('fromDescription', () => {
         it('accepts top level promises', async () => {
-            const sync = new SyncService();            
+            const sync = new JobService();            
             const bld = new TaskListBuilder();
 
             const runStack: string[] = [];
@@ -68,7 +68,7 @@ describe('TaskListBuilder', () => {
     })
     describe('fromArray', () => {
         it('accepts an array of name, task pairs and runs them', async () => {
-            const sync = new SyncService();            
+            const sync = new JobService();            
             const bld = new TaskListBuilder();
 
             const runStack: string[] = [];
@@ -85,7 +85,7 @@ describe('TaskListBuilder', () => {
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } )
         it('accepts an array of TaskFuncs and runs them', async () => {
-            const sync = new SyncService();            
+            const sync = new JobService();            
             const bld = new TaskListBuilder();
 
             const runStack: string[] = [];
@@ -102,7 +102,7 @@ describe('TaskListBuilder', () => {
             assert.equal(runStack.length, 3, 'expected all tasks to run')
         } )
         it('accepts an array of Promises and runs them', async () => {
-            const sync = new SyncService();            
+            const sync = new JobService();            
             const bld = new TaskListBuilder();
 
             const runStack: string[] = [];

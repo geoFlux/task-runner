@@ -32,14 +32,15 @@ export interface TaskInfo {
     taskTime: string;
     warnings: Warning[];
 }
-export type SyncInfo = {
+export type JobInfo = {
     tasks$: Observable<TaskInfo[]>;
     progress$: Observable<number>;
     syncTime$: Observable<string>;
     cancelToken: CancelToken;
-    finished$: Observable<SyncResult>,
+    finished$: Observable<JobResult>,
+    waitForCompletion(): Promise<JobResult>,
 }
-export interface SyncResult {
+export interface JobResult {
     error: any,
     cancelled: boolean,
     warnings: Warning[],
