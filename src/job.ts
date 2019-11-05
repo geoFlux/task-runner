@@ -3,7 +3,7 @@ import moment from 'moment';//todo: remove moment
 import { TaskInfo, JobInfo, JobResult, Task, isTask } from './job-models';
 import { CancelToken, getCancelToken } from "./cancel-token";
 import { TaskListRunner } from './task-list-runner';
-import flatMap from 'lodash.flatmap';
+import flatMap from './util/flat-map';
 import { Warning } from './warning';
 import { taskListFrom, TaskListDescription, ArrayOfTaskLike, JobDescription } from './task-list-builder';
 import { isPromise } from './util/is-promise';
@@ -80,7 +80,7 @@ export class Job<T> {
                 const total = infos.length;
                 const complete = infos.filter(i => i.status == 'finished').length;
                 this.progress.next(Math.floor(complete / total * 100));
-                warnings = flatMap(infos, info => info.warnings);//todo: this is the only place flatMap is used, write your own flatMap
+                warnings = flatMap(infos, info => info.warnings);
             });
         let error: any = null;
         combineLatest(taskInfos)
