@@ -20,22 +20,22 @@ export function isTask(obj: any): obj is Task {
 export interface TaskInfo {
     name: string,
     sectionName: string,
-    enterDate: string,
-    startDate: string,
-    finishDate: string,
+    enterDate: Date,
+    startDate: Date | null,
+    finishDate: Date | null,
     sequence: number,
     errorCount: number,
     isRunning: boolean,
     error?: any,
     status: 'waiting' | 'running' | 'errored' | 'canceled' | 'finished',
     statusText: string | null,
-    taskTime: string;
+    taskTime: number;
     warnings: Warning[];
 }
 export type JobInfo = {
     tasks$: Observable<TaskInfo[]>;
     progress$: Observable<number>;
-    syncTime$: Observable<string>;
+    syncTime$: Observable<number>;
     cancelToken: CancelToken;
     finished$: Observable<JobResult>,
     waitForCompletion(): Promise<JobResult>,

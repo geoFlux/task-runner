@@ -2,7 +2,6 @@ import { Task, TaskInfo } from "./job-models";
 import { CancelToken } from "./cancel-token";
 import { BehaviorSubject, Subject, interval } from "rxjs";
 import { filter, take, map, startWith, takeUntil } from "rxjs/operators"
-import  moment from 'moment';//todo: remove moment
 import { Warning, GenericWarning } from "./warning";
 import { isPromise } from "./util/is-promise";
 
@@ -173,15 +172,15 @@ export class TaskListBuilder {
         let info$ = new BehaviorSubject<TaskInfo>({
             name,
             sectionName,
-            enterDate: moment().format('HH:mm:ss'),
-            startDate: '',
-            finishDate: '',
+            enterDate: new Date(),
+            startDate: null,
+            finishDate: null,
             sequence,
             errorCount: 0,
             isRunning: false,
             status: 'waiting',
             statusText: null,
-            taskTime: '',
+            taskTime: 0,
             warnings: []
         });
         const updateStatusText = (statusText: string) => {
@@ -212,8 +211,8 @@ export class TaskListBuilder {
                 await this.inFlightRefCounter.increment();
                 info$.next({
                     ...info$.value,
-                    startDate: cancelToken.isCanceled() ? '': moment().format('HH:mm:ss'),
-                    finishDate: '',
+                    startDate: cancelToken.isCanceled() ? null: new Date(),
+                    finishDate: null,
                     isRunning: true,
                     errorCount: 0,
                     status: 'running',
@@ -222,11 +221,11 @@ export class TaskListBuilder {
                 try{
                     //start timer
                     if(!cancelToken.isCanceled()){
-                        const startTime = moment();
+                        const startTime = new Date() as any;
                         interval(1000)
                             .pipe(
-                                map(t => moment(moment(new Date()).diff(startTime)).format('mm:ss')),
                                 startWith('< 1'),
+                                map(t => (new Date() as any) - startTime),                                
                                 takeUntil(taskComplete$)
                             )
                             .subscribe(taskTime => {
@@ -250,7 +249,7 @@ export class TaskListBuilder {
                     if(cancelToken.isCanceled()){
                         info$.next({
                             ...info$.value,
-                            finishDate: moment().format('HH:mm:ss'),
+                            finishDate: new Date(),
                             isRunning: false,
                             status: 'canceled',
                         });
@@ -258,7 +257,7 @@ export class TaskListBuilder {
                     else{
                         info$.next({
                             ...info$.value,
-                            finishDate: moment().format('HH:mm:ss'),
+                            finishDate: new Date(),
                             isRunning: false,
                             status: 'finished',
                         });
@@ -268,7 +267,7 @@ export class TaskListBuilder {
                     console.error('--caught error', err);
                     info$.next({
                         ...info$.value,
-                        finishDate: moment().format('HH:mm:ss'),
+                        finishDate: new Date(),
                         isRunning: false,
                         errorCount: 1,
                         error: err,

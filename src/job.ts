@@ -1,5 +1,4 @@
 import { Subject, BehaviorSubject, ReplaySubject, interval, combineLatest } from 'rxjs';
-import moment from 'moment';//todo: remove moment
 import { TaskInfo, JobInfo, JobResult, Task, isTask } from './job-models';
 import { CancelToken, getCancelToken } from "./cancel-token";
 import { TaskListRunner } from './task-list-runner';
@@ -7,7 +6,7 @@ import flatMap from './util/flat-map';
 import { Warning } from './warning';
 import { taskListFrom, TaskListDescription, ArrayOfTaskLike, JobDescription } from './task-list-builder';
 import { isPromise } from './util/is-promise';
-import { filter, takeUntil, map, take } from 'rxjs/operators'
+import { filter, takeUntil, map, take, startWith } from 'rxjs/operators'
 export class Job<T> {
     private taskArray: Task[];
     private taskRunner = new TaskListRunner();
@@ -47,15 +46,16 @@ export class Job<T> {
             await this.sync(this.taskArray, this.cancelToken);
         }, 10);
         this.isSyncing.next(true);
-        const startTime = moment();
+        const startTime = new Date() as any;
         
         return {
             tasks$: this.currentTaskInfos.asObservable(),
             progress$: this.progress.asObservable(),
             syncTime$: interval(1000)
                 .pipe(
+                    startWith(0),
                     takeUntil(this.isSyncing.pipe(filter(x => x == false))),
-                    map(() => moment(moment(new Date()).diff(startTime)).format('mm:ss'))
+                    map((x) => (new Date() as any) - startTime)
                 ),
             cancelToken: this.cancelToken,
             finished$: this.finished$.asObservable(),
